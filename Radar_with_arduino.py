@@ -8,6 +8,8 @@ import math
 import sys
 import time
 
+ser = serial.Serial('/dev/cu.Oli_1', 9600)
+
 # Configuration
 BaudRate = 115200
 Max_distance = 2000 #cm - maxrange
