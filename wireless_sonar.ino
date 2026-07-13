@@ -1,45 +1,56 @@
 #include <Servo.h>
-#include <SoftwareSerial.h>
 
-SoftwareSerial bt(10, 11);   // HC-05: TXD->10, RXD->11 via divider
-
-Servo sweepServo;
-const int trigPin = 7;       // match these to YOUR pins
+const int trigPin = 7;
 const int echoPin = 6;
 const int servoPin = 9;
+const int potPin = 5;
+const int buzzerPin = 4;
+
+const int HYSTERESIS = 3;
+
+Servo radarServo;
+float duration, distance;
+int angle = 0;
+int direction = 1;
+bool buzzing = false;
 
 void setup() {
-  Serial.begin(9600);
-  bt.begin(9600);
   pinMode(trigPin, OUTPUT);
   pinMode(echoPin, INPUT);
-  sweepServo.attach(servoPin);
+  pinMode(buzzerPin, OUTPUT);
+  radarServo.attach(servoPin);
+  Serial.begin(9600);   // CHANGED: was 115200 — must match the HC-05's UART setting
 }
 
-int readDistance() {
+void loop() {
+  radarServo.write(angle);
+  delay(30);
+
   digitalWrite(trigPin, LOW);
   delayMicroseconds(2);
   digitalWrite(trigPin, HIGH);
   delayMicroseconds(10);
   digitalWrite(trigPin, LOW);
-  long duration = pulseIn(echoPin, HIGH, 30000);  // timeout = no echo
-  return duration * 0.034 / 2;                    // cm
-}
 
-void sendReading(int angle, int distance) {
-  Serial.print(angle); Serial.print(","); Serial.println(distance);
-  bt.print(angle);     bt.print(",");    bt.println(distance);
-}
+  duration = pulseIn(echoPin, HIGH, 20000);
+  distance = (duration * 0.0343) / 2;
 
-void loop() {
-  for (int angle = 15; angle <= 165; angle++) {
-    sweepServo.write(angle);
-    delay(30);
-    sendReading(angle, readDistance());
+  int threshold = map(analogRead(potPin), 0, 1023, 5, 200);
+
+  if (distance > 0 && distance <= threshold - HYSTERESIS) {
+    tone(buzzerPin, 2000);
+    buzzing = true;
+  } else if (distance == 0 || distance > threshold + HYSTERESIS) {
+    noTone(buzzerPin);
+    buzzing = false;
   }
-  for (int angle = 165; angle >= 15; angle--) {
-    sweepServo.write(angle);
-    delay(30);
-    sendReading(angle, readDistance());
-  }
+
+  Serial.print("Angle:");
+  Serial.print(angle);
+  Serial.print(",Distance:");
+  Serial.println(distance);
+
+  angle += direction * 2;
+  if (angle >= 180) { direction = -1; }
+  if (angle <= 0)   { direction = 1; }
 }
