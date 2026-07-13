@@ -8,11 +8,12 @@ import math
 import sys
 import time
 
+# bluetooth serial port for Arduino
 ser = serial.Serial('/dev/cu.Oli_1', 9600)
 
 # Configuration
-BaudRate = 115200
-Max_distance = 2000 #cm - maxrange
+BaudRate = 9600
+Max_distance = 200 #cm - maxrange
 
 Width, Height = 800, 600
 CX, CY = Width // 2, Height // 2
